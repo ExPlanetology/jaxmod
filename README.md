@@ -11,6 +11,8 @@
 ## About
 Jaxmod is a Python package that provides lightweight utility functions for JAX arrays, batching, and pytrees. It mostly builds on top of the amazing [Equinox](https://docs.kidger.site/equinox/) package, whilst notably incorporating structural conventions and helper functions that make JAX-based scientific programming more convenient and consistent.
 
+Although generally useful for numerical and scientific computing, *Jaxmod* is somewhat biased toward applications in chemistry, geochemistry, and planetary science, where tasks like handling stoichiometric matrices, managing physical constants, and ensuring numerical stability are common.
+
 ## Documentation
 
 The documentation is available online, with options to download it in EPUB or PDF format:

@@ -1,9 +1,6 @@
 Overview
 ========
 
-Conventions
------------
-
 Whilst `Equinox <https://docs.kidger.site/equinox/>`_ and `JAX <https://docs.jax.dev/en/latest/>`_ provide great flexibility for building software, establishing a few conventions can help reduce boilerplate, ensure consistent behaviour, and make scientific computing code more robust. For example:
 
 1. **Trace all arrays consistently.** Both NumPy and JAX arrays should be recognised in pytrees for tracing. *Note: This functionality is already provided by Equinox.*

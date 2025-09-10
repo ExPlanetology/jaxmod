@@ -1,7 +1,7 @@
 Jaxmod Documentation
 ####################
 
-| Lead author: Dan J. Bower
+| Author: Dan J. Bower
 | Institute of Geochemistry and Petrology
 | Department of Earth and Planetary Sciences
 | ETH Zurich, Switzerland
