@@ -1,0 +1,21 @@
+[project]
+name = "jaxmod"
+version = "0.1.0"
+description = "Lightweight utility functions for JAX arrays, batching, and pytrees"
+readme = "README.md"
+requires-python = ">=3.11,<=4.0"
+license = "GPL-3.0-or-later"
+authors = [
+    {name = "Dan J Bower", email = "dbower@eaps.ethz.ch"},
+]
+dependencies = [
+    # JAX pinned for Intel macOS
+    "jax==0.4.38; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    # JAX pinned for all other platforms
+    "jax<=0.7.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
+    "jaxtyping>=0.3.2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

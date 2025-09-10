@@ -1,0 +1,11 @@
+{
+    "include": [
+        "jaxmod",
+    ],
+    "typeCheckingMode": "standard",
+    "pythonVersion": "3.11",
+    "pythonPlatform": "All",
+    "reportIncompatibleMethodOverride": "none",
+    "venvPath": ".",
+    "venv": ".venv"
+}
