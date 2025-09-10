@@ -16,6 +16,8 @@
 #
 """Package level variables"""
 
+import logging
+
 import jax
 import numpy as np
 
@@ -28,3 +30,38 @@ jax.config.update("jax_enable_x64", True)
 MAX_EXP_INPUT: float = np.log(np.finfo(np.float64).max)
 # Minimum x for which exp(x) is non-zero in 64-bit precision
 MIN_EXP_INPUT: float = np.log(np.finfo(np.float64).tiny)
+
+# Create the package logger.
+# https://docs.python.org/3/howto/logging.html#library-config
+logger: logging.Logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
+def simple_formatter() -> logging.Formatter:
+    """Simple formatter for logging
+
+    Returns:
+        Formatter for logging
+    """
+    fmt: str = "[%(asctime)s - %(name)-30s - %(levelname)-9s] - %(message)s"
+    datefmt: str = "%H:%M:%S"
+    formatter: logging.Formatter = logging.Formatter(fmt, datefmt=datefmt)
+
+    return formatter
+
+
+def debug_logger() -> logging.Logger:
+    """Sets up debug logging to the console.
+
+    Returns:
+        A logger
+    """
+    package_logger: logging.Logger = logging.getLogger(__name__)
+    package_logger.setLevel(logging.DEBUG)
+    package_logger.handlers = []
+    console_handler: logging.Handler = logging.StreamHandler()
+    console_formatter: logging.Formatter = simple_formatter()
+    console_handler.setFormatter(console_formatter)
+    logger.addHandler(console_handler)
+
+    return package_logger

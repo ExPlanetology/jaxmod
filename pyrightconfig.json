@@ -1,6 +1,10 @@
 {
     "include": [
         "jaxmod",
+        "tests",
+    ],
+    "exclude":[
+        "docs"
     ],
     "typeCheckingMode": "standard",
     "pythonVersion": "3.11",

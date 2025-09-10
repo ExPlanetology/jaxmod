@@ -8,13 +8,51 @@ license = "GPL-3.0-or-later"
 authors = [
     {name = "Dan J Bower", email = "dbower@eaps.ethz.ch"},
 ]
+keywords = [
+  "jax",
+  "equinox",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+    "Natural Language :: English",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Astronomy",
+    "Topic :: Scientific/Engineering :: Atmospheric Science",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Scientific/Engineering :: Chemistry",
+]
 dependencies = [
     # JAX pinned for Intel macOS
     "jax==0.4.38; sys_platform == 'darwin' and platform_machine == 'x86_64'",
-    # JAX pinned for all other platforms
+    # JAX for all other platforms
     "jax<=0.7.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
-    "jaxtyping>=0.3.2",
+    "pandas>=2.3.2",
 ]
+
+[project.urls]
+homepage = "https://planetology.ethz.ch"
+documentation = "https://jaxmod.readthedocs.io/en/latest"
+repository = "https://github.com/ExPlanetology/jaxmod"
+issues = "https://github.com/ExPlanetology/jaxmod/issues"
+
+[dependency-groups]
+dev = [
+    "beartype>=0.21.0,<0.22.0",
+    "jaxtyping>=0.3.2,<0.4.0",
+    "pre-commit>=4.2.0",
+    "pytest>=8.4.1",
+    "pytest-beartype>=0.2.0,<0.3.0",
+    "pytest-cov>=6.2.1",
+]
+
+[tool.pytest.ini_options]
+beartype_packages = "jaxmod"
 
 [build-system]
 requires = ["hatchling"]
