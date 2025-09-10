@@ -26,10 +26,10 @@ __version__: str = "0.1.0"
 jax.config.update("jax_enable_x64", True)
 
 
-# Maximum x for which exp(x) is finite in 64-bit precision (to prevent overflow)
 MAX_EXP_INPUT: float = np.log(np.finfo(np.float64).max)
-# Minimum x for which exp(x) is non-zero in 64-bit precision
+"""Maximum x for which exp(x) is finite in 64-bit precision to prevent overflow"""
 MIN_EXP_INPUT: float = np.log(np.finfo(np.float64).tiny)
+"""Minimum x for which exp(x) is non-zero in 64-bit precision to prevent underflow"""
 
 # Create the package logger.
 # https://docs.python.org/3/howto/logging.html#library-config

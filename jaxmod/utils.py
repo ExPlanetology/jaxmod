@@ -20,6 +20,7 @@ import logging
 from collections.abc import Callable, Iterable
 from typing import Any, Literal
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 import numpy as np
@@ -34,7 +35,7 @@ logger: logging.Logger = logging.getLogger(__name__)
 
 
 def as_j64(x: ArrayLike | tuple) -> Float[Array, "..."]:
-    """Converts input to a JAX array of dtype float64.
+    """Converts input to a :class:`jax.Array` of dtype :obj:`jax.numpy.float64`.
 
     This ensures that the array has a fixed dtype, preventing JAX from recompiling functions due to
     type changes between calls.
@@ -43,7 +44,7 @@ def as_j64(x: ArrayLike | tuple) -> Float[Array, "..."]:
         x: Input to convert
 
     Returns:
-        JAX array of dtype float64
+        :class:`jax.Array` of dtype :obj:`jax.numpy.float64`
     """
     return jnp.asarray(x, dtype=jnp.float64)
 
@@ -61,9 +62,9 @@ def get_batch_axis(x: Any) -> Literal[0, None]:
 
     Rules:
         - 1-D JAX arrays: Batched along axis 0
-        - 2-D JAX arrays: Batched along axis 0 if shape[0] > 1
+        - 2-D JAX arrays: Batched along axis 0 if ``shape[0]``>1
         - 0-D (scalar) JAX arrays: Not batched
-        - NumPy arrays of other objects: Not batched
+        - NumPy arrays or other objects: Not batched
 
     Args:
         x: Object to check for batching
@@ -79,6 +80,33 @@ def get_batch_axis(x: Any) -> Literal[0, None]:
         elif x.ndim == 2 and x.shape[0] > 1:
             return 0
     return None  # explicit fallback
+
+
+def get_batch_size(x: PyTree) -> int:
+    """Determines the maximum batch size (i.e., length along axis ``0``) amongst all array-like
+    leaves.
+
+    This inspects every leaf in the pytree and checks whether it is an array. Scalars contribute a
+    size of ``1``, while arrays contribute the length of their leading dimension (``shape[0]``).
+    The result is the largest such size found.
+
+    Note:
+        Unlike :func:`get_batch_axis`, which only considers JAX arrays for batching, this function
+        counts both JAX and NumPy arrays as array-like leaves when computing the maximum batch
+        size.
+
+    Args:
+        x: Pytree of nested containers that may include arrays or scalars
+
+    Returns:
+        The maximum leading dimension size across all array-like leaves
+    """
+    max_size: int = 1
+    for leaf in jax.tree_util.tree_leaves(x):
+        if eqx.is_array(leaf):
+            max_size = max(max_size, leaf.shape[0] if leaf.ndim else 1)
+
+    return max_size
 
 
 def is_hashable(x: Any) -> None:
@@ -120,7 +148,7 @@ def partial_rref(matrix: NpArray) -> NpArray:
         matrix: A 2-D NumPy array of shape (nrows, ncols).
 
     Returns:
-        A NumPy array containing the linear components.
+        A :class:`numpy.ndarray` containing the linear components.
     """
     nrows, ncols = matrix.shape
 
@@ -221,7 +249,7 @@ def to_hashable(x: Callable) -> Callable:
         x: A callable to wrap
 
     Returns:
-        An :func:`equinox.Partial` object wrapping the input callable, making it hashable
+        x as a wrapped callable, making it hashable
     """
     return Partial(x)
 

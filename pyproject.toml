@@ -33,6 +33,7 @@ dependencies = [
     # JAX for all other platforms
     "jax<=0.7.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "pandas>=2.3.2",
+    "equinox>=0.13.0",
 ]
 
 [project.urls]
@@ -40,6 +41,18 @@ homepage = "https://planetology.ethz.ch"
 documentation = "https://jaxmod.readthedocs.io/en/latest"
 repository = "https://github.com/ExPlanetology/jaxmod"
 issues = "https://github.com/ExPlanetology/jaxmod/issues"
+
+[project.optional-dependencies]
+docs = [
+    "sphinx-rtd-theme>=3.0.2",
+    "sphinx>=8.2.3",
+    "sphinxcontrib-bibtex>=2.6.5",
+    "setuptools>=80.9.0",
+    "doc8>=2.0.0",
+    "nbsphinx>=0.9.6",
+    "pypandoc>=1.15",
+    "nbsphinx-link>=1.3.1",
+]
 
 [dependency-groups]
 dev = [

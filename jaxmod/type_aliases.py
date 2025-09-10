@@ -22,7 +22,12 @@ import numpy as np
 import numpy.typing as npt
 
 NpArray: TypeAlias = npt.NDArray
+"""NumPy array"""
 NpBool: TypeAlias = npt.NDArray[np.bool_]
+"""NumPy :obj:`numpy.bool_` array"""
 NpFloat: TypeAlias = npt.NDArray[np.float64]
+"""NumPy :obj:`numpy.float64` array"""
 NpInt: TypeAlias = npt.NDArray[np.int_]
+"""NumPy :obj:`numpy.int_` array"""
 Scalar: TypeAlias = int | float
+"""Scalar"""
