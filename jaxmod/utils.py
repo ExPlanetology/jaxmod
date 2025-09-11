@@ -25,7 +25,7 @@ import jax
 import jax.numpy as jnp
 import numpy as np
 import pandas as pd
-from jax.tree_util import Partial, tree_map
+from jax.tree_util import tree_map
 from jaxtyping import Array, ArrayLike, Float, PyTree
 
 from jaxmod import MAX_EXP_INPUT
@@ -237,21 +237,30 @@ def safe_exp(x: ArrayLike) -> Array:
 
 
 def to_hashable(x: Callable) -> Callable:
-    """Wraps a callable in :func:`equinox.Partial` to make it hashable for JAX transformations.
+    """Wraps a callable to make it hashable for JAX transformations.
 
-    This is useful when passing callables with fixed arguments to JAX transformations
-    (e.g., :func:`jax.vmap`, :func:`jax.grad`, :func:`jax.jit`) that require all static arguments
-    (including function references) to be hashable.
+    This wrapper is useful when passing bound methods of Equinox PyTrees (with JAX arrays as
+    attributes) to transformations like :func:`jax.jit`, :func:`jax.vmap`, or :func:`lax.scan`. It
+    wraps the callable in a lambda to forward all arguments while avoiding JAX trying to trace the
+    method itself. See discussion: https://github.com/patrick-kidger/equinox/issues/1011
 
-    See discussion: https://github.com/patrick-kidger/equinox/issues/1011
+    Note:
+        - The callable itself must only capture static values (constants, other hashable objects)
+          in its closure. Dynamic JAX arrays that are part of a PyTree's attributes are fine---they
+          will be traced normally when the function is called.
+        - This does not make the arrays inside a PyTree static; it only wraps the function
+          reference to avoid JAX hanging.
+        - The returned lambda is hashable as a Python object, which is sufficient for JAX static
+          arguments. However, two identical lambdas are not considered equal---hashability is per
+          object, not structural.
 
     Args:
         x: A callable to wrap
 
     Returns:
-        x as a wrapped callable, making it hashable
+        A hashable lambda forwarding all arguments to the original callable.
     """
-    return Partial(x)
+    return lambda *args, **kwargs: x(*args, **kwargs)
 
 
 def to_native_floats(value: Any) -> Any:
