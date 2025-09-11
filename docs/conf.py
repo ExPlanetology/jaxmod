@@ -29,7 +29,7 @@ copyright = "2025, Dan J. Bower"
 author = "Dan J. Bower"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"
+release = "0.2.1"
 
 
 # -- General configuration ---------------------------------------------------
