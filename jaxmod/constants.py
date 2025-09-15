@@ -40,6 +40,9 @@ r"""Boltzmann constant in :math:`\mathrm{J}\ \mathrm{K}^{-1}`"""
 BOLTZMANN_CONSTANT_BAR: float = BOLTZMANN_CONSTANT * 1e-5
 r"""Boltzmann constant in :math:`\mathrm{bar}\ \mathrm{m}^3\ \mathrm{K}^{-1}`"""
 
+EARTH_MASS: float = 5.9722e24
+r"""Mass of Earth in kg"""
+
 OCEAN_MOLES: float = 7.68894973907177e22
 r"""Moles of :math:`\mathrm{H}_2` or :math:`\mathrm{H}_2\mathrm{O}` in present-day Earth's ocean"""
 
