@@ -21,7 +21,7 @@ import logging
 import jax
 import numpy as np
 
-__version__: str = "0.2.2"
+__version__: str = "0.2.3"
 
 jax.config.update("jax_enable_x64", True)
 
