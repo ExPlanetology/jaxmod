@@ -1,0 +1,5 @@
+[run]
+omit =
+    jaxmod/constants.py
+    jaxmod/units.py
+    */__init__.py       # common ignore
