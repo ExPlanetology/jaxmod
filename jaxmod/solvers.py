@@ -110,12 +110,12 @@ def batch_retry_solver(
                 solution: Current batch of solution estimates
                 result: Current result of the solver for each entry
                 steps: Number of solver steps recorded for each entry
-                success_attempt: Attempt index when each entry first succeeded
+                attempt: Attempt index when each entry first succeeded
 
         Returns:
             Updated state tuple with the same structure as in the input
         """
-        i, key, solution, result, steps, success_attempt = state
+        i, key, solution, result, steps, attempt = state
         # jax.debug.print("Iteration: {out}", out=i)
 
         failed_mask: Bool[Array, " batch"] = result != optx.RESULTS.successful
@@ -157,9 +157,9 @@ def batch_retry_solver(
         updated_steps: Integer[Array, " batch"] = cast(
             Array, jnp.where(update_mask, new_steps, steps)
         )
-        updated_success_attempt: Array = jnp.where(update_mask, i, success_attempt)  # pyright: ignore
+        updated_attempt: Array = jnp.where(update_mask, i, attempt)  # pyright: ignore
 
-        return (i, key, updated_solution, updated_result, updated_steps, updated_success_attempt)
+        return (i, key, updated_solution, updated_result, updated_steps, updated_attempt)
 
     def cond_fn(state: tuple[Array, ...]) -> Bool[Array, "..."]:
         """Determines whether additional solver retries are needed.
@@ -216,13 +216,13 @@ def batch_retry_solver(
         first_solve_successful.astype(int),  # 1 for solved, otherwise 0
     )
 
-    _, _, final_solution, final_result, final_steps, final_success_attempt = lax.while_loop(
+    _, _, final_solution, final_result, final_steps, final_attempt = lax.while_loop(
         cond_fn, body_fn, initial_state
     )
 
     # Bundle the final solution into a single object
     multi_sol: MultiTrySolution = MultiTrySolution(
-        final_solution, final_result, None, {"num_steps": final_steps}, None, final_success_attempt
+        final_solution, final_result, None, {"num_steps": final_steps}, None, final_attempt
     )
 
     return multi_sol
