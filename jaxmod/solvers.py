@@ -83,7 +83,8 @@ def batch_retry_solver(
     objective function.
 
     Args:
-        solver_fn: Callable that performs a single solve and returns an ``optx.Solution`` object
+        solver_fn: Callable that performs a single solve and returns a :class:`~MultiTrySolution`
+            object
         initial_guess: Batched array of initial guesses for the solver
         parameters: Model parameters passed to the solver
         perturb_scale: Array or scalar that scales the random perturbation applied to failed
@@ -133,7 +134,8 @@ def batch_retry_solver(
         new_initial_solution: Float[Array, "batch solution"] = solution + perturbations
         # jax.debug.print("new_initial_solution = {out}", out=new_initial_solution)
 
-        new_sol: optx.Solution = solver_fn(new_initial_solution, parameters)
+        key, subkey = random.split(key)
+        new_sol: optx.Solution = solver_fn(new_initial_solution, parameters, subkey)
 
         new_solution: Float[Array, "batch solution"] = new_sol.value
         new_result: optx.RESULTS = new_sol.result
@@ -188,8 +190,8 @@ def batch_retry_solver(
         return jnp.logical_and(i < max_attempts, jnp.any(result != optx.RESULTS.successful))
 
     # Try first solution
-    first_sol: optx.Solution = solver_fn(initial_guess, parameters)
-
+    key, subkey = random.split(key)
+    first_sol: optx.Solution = solver_fn(initial_guess, parameters, subkey)
     first_solution: Float[Array, "batch solution"] = first_sol.value
     # jax.debug.print("first_solution = {out}", out=first_solution)
     first_solve_result: optx.RESULTS = first_sol.result
