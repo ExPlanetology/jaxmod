@@ -14,12 +14,11 @@
 # You should have received a copy of the GNU General Public License along with Jaxmod. If not,
 # see <https://www.gnu.org/licenses/>.
 #
-"""Solver"""
+"""Solvers"""
 
 from collections.abc import Callable
 from typing import cast
 
-import equinox as eqx
 import jax.numpy as jnp
 import optimistix as optx
 from equinox._enum import EnumerationItem
@@ -30,7 +29,7 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer, PRNGKeyArray, PyTr
 class MultiTrySolution(optx.Solution):
     """A solution wrapper for handling multiple solver attempts per problem
 
-    This class extends ``optx.Solution`` to manage problems where each entry in the batch may
+    This class extends :class:`optimistix.Solution` to manage problems where each entry in the batch may
     require multiple attempts to converge. The `attempts` field tracks the number of tries made for
     each solution.
     """
@@ -63,13 +62,13 @@ def check_convergence(
     return jnp.linalg.norm(objective_function(solution, parameters), axis=1) < tolerance
 
 
-@eqx.filter_jit
+# @eqx.filter_jit
 # @eqx.debug.assert_max_traces(max_traces=1)
 def batch_retry_solver(
     solver_fn: Callable,
     initial_guess: Float[Array, "batch solution"],
     parameters: PyTree,
-    perturbation: ArrayLike,
+    perturb_scale: ArrayLike,
     max_attempts: int,
     key: PRNGKeyArray,
 ) -> MultiTrySolution:
@@ -87,13 +86,13 @@ def batch_retry_solver(
         solver_fn: Callable that performs a single solve and returns an ``optx.Solution`` object
         initial_guess: Batched array of initial guesses for the solver
         parameters: Model parameters passed to the solver
-        perturbation: Array or scalar that scales the random perturbation applied to failed
+        perturb_scale: Array or scalar that scales the random perturbation applied to failed
             solutions
         max_attempts: Maximum number of solver retries per batch entry
         key: JAX PRNG key for reproducible random perturbations
 
     Returns:
-        MultiTrySolution object
+        :class:`MultiTrySolution` instance
     """
 
     def body_fn(state: tuple[Array, Array, Array, optx.RESULTS, Array, Array]) -> tuple:
@@ -129,7 +128,7 @@ def batch_retry_solver(
             subkey, shape=perturb_shape, minval=-1.0, maxval=1.0
         )
         perturbations: Float[Array, "batch solution"] = jnp.where(
-            failed_mask[:, None], perturbation * raw_perturb, jnp.zeros_like(solution)
+            failed_mask[:, None], perturb_scale * raw_perturb, jnp.zeros_like(solution)
         )
         new_initial_solution: Float[Array, "batch solution"] = solution + perturbations
         # jax.debug.print("new_initial_solution = {out}", out=new_initial_solution)

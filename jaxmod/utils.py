@@ -244,16 +244,6 @@ def to_hashable(x: Callable) -> Callable:
     wraps the callable in a lambda to forward all arguments while avoiding JAX trying to trace the
     method itself. See discussion: https://github.com/patrick-kidger/equinox/issues/1011
 
-    Note:
-        - The callable itself must only capture static values (constants, other hashable objects)
-          in its closure. Dynamic JAX arrays that are part of a PyTree's attributes are fine---they
-          will be traced normally when the function is called.
-        - This does not make the arrays inside a PyTree static; it only wraps the function
-          reference to avoid JAX hanging.
-        - The returned lambda is hashable as a Python object, which is sufficient for JAX static
-          arguments. However, two identical lambdas are not considered equal---hashability is per
-          object, not structural.
-
     Args:
         x: A callable to wrap
 

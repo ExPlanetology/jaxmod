@@ -12,6 +12,14 @@ jaxmod.constants module
    :show-inheritance:
    :undoc-members:
 
+jaxmod.solvers module
+---------------------
+
+.. automodule:: jaxmod.solvers
+   :members:
+   :show-inheritance:
+   :undoc-members:
+
 jaxmod.type\_aliases module
 ---------------------------
 

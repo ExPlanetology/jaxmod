@@ -11,6 +11,7 @@ authors = [
 keywords = [
   "jax",
   "equinox",
+  "optimistix",
 ]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
