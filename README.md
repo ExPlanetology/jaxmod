@@ -9,9 +9,9 @@
 [![Test coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen)](https://github.com/ExPlanetology/jaxmod)
 
 ## About
-Jaxmod---short for "JAX for modelling"---is a lightweight "extension pack" for JAX-based scientific computing. It provides convenience utilities, wrappers, and conventions on top of the excellent [Equinox](https://docs.kidger.site/equinox/) and [Optimistix](https://docs.kidger.site/optimistix/) libraries, making them even easier to use for real scientific workflows.
+Jaxmod&mdash;short for "JAX for modelling"&mdash;is a lightweight "extension pack" for JAX-based scientific computing. It provides convenience utilities, wrappers, and conventions on top of the excellent [Equinox](https://docs.kidger.site/equinox/) and [Optimistix](https://docs.kidger.site/optimistix/) libraries, making them even easier to use for real scientific workflows.
 
-The library was originally created to avoid code duplication in thermochemistry applications for planetary science. Many such problems share similar structural patterns---stoichiometric systems, batched equilibrium calculations, constraints, and differentiable solvers. Jaxmod consolidates this boilerplate into reusable components and establishes consistent conventions, whether for vectorising models efficiently or extending solver behaviour in a principled way.
+The library was originally created to avoid code duplication in thermochemistry applications for planetary science. Many such problems share similar structural patterns&mdash;stoichiometric systems, batched equilibrium calculations, constraints, and differentiable solvers. Jaxmod consolidates this boilerplate into reusable components and establishes consistent conventions, whether for vectorising models efficiently or extending solver behaviour in a principled way.
 
 ## Documentation
 
