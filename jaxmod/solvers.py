@@ -29,9 +29,9 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer, PRNGKeyArray, PyTr
 class MultiTrySolution(optx.Solution):
     """A solution wrapper for handling multiple solver attempts per problem
 
-    This class extends :class:`optimistix.Solution` to manage problems where each entry in the batch may
-    require multiple attempts to converge. The `attempts` field tracks the number of tries made for
-    each solution.
+    This class extends :class:`optimistix.Solution` to manage problems where each entry in the
+    batch may require multiple attempts to converge. The `attempts` field tracks the number of
+    tries made for each solution.
     """
 
     attempts: Integer[Array, "..."]
@@ -50,7 +50,7 @@ def check_convergence(
     function value being less than ``tolerance``.
 
     Args:
-        objective_function: A callable taking ``solution`` and ``parameters`` that return the
+        objective_function: A callable taking ``solution`` and ``parameters`` that returns the
             objective residuals for each model in the batch
         solution: Batched array of candidate solutions
         parameters: Parameters passed to the objective function
@@ -84,7 +84,8 @@ def batch_retry_solver(
 
     Args:
         solver_fn: Callable that performs a single solve and returns a :class:`~MultiTrySolution`
-            object
+            object. Must accept arguments of an initial guess, a pytree of parameters, and a
+            random seed.
         initial_guess: Batched array of initial guesses for the solver
         parameters: Model parameters passed to the solver
         perturb_scale: Array or scalar that scales the random perturbation applied to failed
