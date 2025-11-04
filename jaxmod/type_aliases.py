@@ -20,6 +20,7 @@ from typing import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
+import optimistix as optx
 
 NpArray: TypeAlias = npt.NDArray
 """NumPy array"""
@@ -31,3 +32,7 @@ NpInt: TypeAlias = npt.NDArray[np.int_]
 """NumPy :obj:`numpy.int_` array"""
 Scalar: TypeAlias = int | float
 """Scalar"""
+OptxSolver: TypeAlias = (
+    optx.AbstractRootFinder | optx.AbstractLeastSquaresSolver | optx.AbstractMinimiser
+)
+"""Optimistix solver"""

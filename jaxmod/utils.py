@@ -34,7 +34,7 @@ from jaxmod.type_aliases import NpArray, NpInt
 logger: logging.Logger = logging.getLogger(__name__)
 
 
-def as_j64(x: ArrayLike | tuple) -> Float[Array, "..."]:
+def as_j64(x: ArrayLike | tuple) -> Float[Array, "..."]:  # pragma: no cover
     """Converts input to a :class:`jax.Array` of dtype :obj:`jax.numpy.float64`.
 
     This ensures that the array has a fixed dtype, preventing JAX from recompiling functions due to
@@ -109,7 +109,7 @@ def get_batch_size(x: PyTree) -> int:
     return max_size
 
 
-def is_hashable(x: Any) -> None:
+def is_hashable(x: Any) -> None:  # pragma: no cover
     """Checks whether an object is hashable and prints the result.
 
     Args:
@@ -122,7 +122,7 @@ def is_hashable(x: Any) -> None:
         print("%s is not hashable" % x.__class__.__name__)
 
 
-def is_jax_array(element: Any) -> bool:
+def is_jax_array(element: Any) -> bool:  # pragma: no cover
     """Checks if ``element`` is a JAX array.
 
     Note:
@@ -205,7 +205,9 @@ def partial_rref(matrix: NpArray) -> NpArray:
     return component_matrix
 
 
-def power_law(values: ArrayLike, constant: ArrayLike, exponent: ArrayLike) -> Array:
+def power_law(
+    values: ArrayLike, constant: ArrayLike, exponent: ArrayLike
+) -> Array:  # pragma no cover
     """Power law
 
     Args:
@@ -219,7 +221,7 @@ def power_law(values: ArrayLike, constant: ArrayLike, exponent: ArrayLike) -> Ar
     return jnp.power(values, exponent) * constant
 
 
-def safe_exp(x: ArrayLike) -> Array:
+def safe_exp(x: ArrayLike) -> Array:  # pragma: no cover
     """Computes the elementwise exponential of ``x`` with input clipping to prevent overflow.
 
     This function clips the input ``x`` to a maximum value defined by
@@ -236,7 +238,7 @@ def safe_exp(x: ArrayLike) -> Array:
     return jnp.exp(jnp.clip(x, max=MAX_EXP_INPUT))
 
 
-def to_hashable(x: Callable) -> Callable:
+def to_hashable(x: Callable) -> Callable:  # pragma: no cover
     """Wraps a callable to make it hashable for JAX transformations.
 
     This wrapper is useful when passing bound methods of Equinox PyTrees (with JAX arrays as

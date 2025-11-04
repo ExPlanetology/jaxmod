@@ -17,24 +17,48 @@
 """Solvers"""
 
 from collections.abc import Callable
-from typing import cast
+from typing import Any, cast
 
+import equinox as eqx
+import jax
 import jax.numpy as jnp
 import optimistix as optx
 from equinox._enum import EnumerationItem
 from jax import lax, random
 from jaxtyping import Array, ArrayLike, Bool, Float, Integer, PRNGKeyArray, PyTree
+from optimistix import RESULTS
 
 
-class MultiTrySolution(optx.Solution):
+class MultiTrySolution(eqx.Module):
     """A solution wrapper for handling multiple solver attempts per problem
 
-    This class extends :class:`optimistix.Solution` to manage problems where each entry in the
-    batch may require multiple attempts to converge. The `attempts` field tracks the number of
-    tries made for each solution.
+    Args:
+        solution: Optimistix solution
+        attempts: Number of attempts
     """
 
+    solution: optx.Solution
     attempts: Integer[Array, "..."]
+
+    @property
+    def aux(self):
+        return self.solution.aux
+
+    @property
+    def result(self) -> RESULTS:
+        return self.solution.result
+
+    @property
+    def value(self):
+        return self.solution.value
+
+    @property
+    def state(self) -> Any:
+        return self.solution.state
+
+    @property
+    def stats(self) -> dict[str, PyTree[ArrayLike]]:
+        return self.solution.stats
 
 
 def check_convergence(
