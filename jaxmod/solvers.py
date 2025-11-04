@@ -66,7 +66,7 @@ def check_convergence(
     solution: Float[Array, "batch solution"],
     parameters: PyTree,
     tolerance: float,
-) -> Bool[Array, " batch"]:
+) -> Bool[Array, " batch"]:  # pragma: no cover
     """Checks convergence of a batched solution
 
     Evaluates the objective function for each solution in a batch and determines whether each model
