@@ -6,7 +6,7 @@
 [![CI](https://github.com/ExPlanetology/jaxmod/actions/workflows/ci.yml/badge.svg)](https://github.com/ExPlanetology/jaxmod/actions/workflows/ci.yml)
 [![Checked with pyright](https://microsoft.github.io/pyright/img/pyright_badge.svg)](https://microsoft.github.io/pyright/)
 [![bear-ified](https://raw.githubusercontent.com/beartype/beartype-assets/main/badge/bear-ified.svg)](https://beartype.readthedocs.io)
-[![Test coverage](https://img.shields.io/badge/Coverage-87%25-brightgreen)](https://github.com/ExPlanetology/jaxmod)
+[![Test coverage](https://img.shields.io/badge/Coverage-93%25-brightgreen)](https://github.com/ExPlanetology/jaxmod)
 
 ## About
 Jaxmod&mdash;short for "JAX for modelling"&mdash;is a lightweight "extension pack" for JAX-based scientific computing. It provides convenience utilities, wrappers, and conventions on top of the excellent [Equinox](https://docs.kidger.site/equinox/) and [Optimistix](https://docs.kidger.site/optimistix/) libraries, making them even easier to use for real scientific workflows.

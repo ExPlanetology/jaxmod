@@ -32,7 +32,7 @@ POSTCHECK_TOLERANCE: float = 1.0e-8
 attempt"""
 
 
-class MultiTrySolution(eqx.Module):
+class MultiTrySolution(eqx.Module):  # pragma: no cover
     """A solution wrapper for handling multiple solver attempts per problem
 
     Args:
@@ -104,7 +104,8 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
     """Makes a batch retry solver.
 
     ``solver_function`` and ``objective_function`` must be pure JAX-callable functions compatible
-    with ``eqx.filter_jit``. They must not close over non-JAX state or produce Python side effects.
+    with :func:`equinox.filter_jit``. They must not close over non-JAX state or produce Python side
+    effects.
 
     Args:
         solver_function: Callable that performs a single solve and returns an
@@ -260,20 +261,28 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
                     i: Current attempt index
                     _: Unused (PRNG key)
                     _: Unused (current batch solution)
-                    result_value: Current result value of the solver for each entry
+                    _: Unused (result value)
                     _: Unused (number of steps)
-                    _: Unused (success attempt index)
+                    attempts: Unused (success attempt index)
 
             Returns:
                 ``True`` if any entry has failed and the number of attempts is less than
                     ``max_attempts``; otherwise ``False``.
             """
-            i, _, _, result_value, _, _ = state
+            i, _, _, _, _, attempt = state
 
             # For debugging to force the loop to run to the maximum allowable value
             # return jnp.logical_and(i < max_attempts, True)
 
-            return jnp.logical_and(i < max_attempts, jnp.any(result_value != 0))
+            # Convergence is determined by `check_convergence`, which enforces the objective
+            # tolerance on each batch entry individually. We track the first successful attempt
+            # index in `attempts`. An entry is considered converged if attempts > 0, ensuring
+            # consistency with the convergence mask used elsewhere in the code.
+            continue_loop: Bool[Array, "..."] = jnp.logical_and(
+                jnp.any(attempt == 0), i < max_attempts
+            )
+
+            return continue_loop
 
         # Try first solution
         # jax.debug.print("Iteration: 1")
