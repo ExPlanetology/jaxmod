@@ -1,6 +1,6 @@
 # Jaxmod
 
-[![Release 0.2.4](https://img.shields.io/badge/Release-0.2.4-blue.svg)](https://github.com/ExPlanetology/jaxmod/releases/tag/v0.2.4)
+[![Release 0.3.0](https://img.shields.io/badge/Release-0.3.0-blue.svg)](https://github.com/ExPlanetology/jaxmod/releases/tag/v0.3.0)
 [![Python 3.11+](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/downloads/release/python-3110/)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-yellow.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![CI](https://github.com/ExPlanetology/jaxmod/actions/workflows/ci.yml/badge.svg)](https://github.com/ExPlanetology/jaxmod/actions/workflows/ci.yml)
