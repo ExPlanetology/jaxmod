@@ -14,36 +14,30 @@
 # You should have received a copy of the GNU General Public License along with Jaxmod. If not,
 # see <https://www.gnu.org/licenses/>.
 #
-"""Tests for solvers
-
-These tests establish the expected design model for all solver in Jaxmod:
-
-    - Inputs and outputs must consistently follow the shape convention (batch_size, dimension)
-    - The batch dimension must always be present, even for single solves
-    - This ensures shape stability under JAX JIT and prevents unnecessary recompilation
-"""
+"""Tests for solvers"""
 
 import logging
+from typing import Callable
 
 import equinox as eqx
 import jax.numpy as jnp
 import numpy as np
 import optimistix as optx
 from jax import random
-from jaxtyping import Array, ArrayLike, Float, Integer, PRNGKeyArray, PyTree
+from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray, PyTree
 from numpy.testing import assert_allclose
 
 from jaxmod import debug_logger
-from jaxmod.solvers import MultiTrySolution
+from jaxmod.solvers import MultiTrySolution, make_batch_retry_solver
 from jaxmod.type_aliases import OptxSolver
 
 logger: logging.Logger = debug_logger()
 logger.setLevel(logging.DEBUG)
 
 RTOL: float = 1.0e-6
-"""Relative tolerance for solver"""
+"""Relative tolerance for the solver"""
 ATOL: float = 1.0e-6
-"""Absolute tolerance for solver"""
+"""Absolute tolerance for the solver"""
 THROW: bool = True
 """Throw an error if the solver fails"""
 MAX_STEPS: int = 16
@@ -51,10 +45,12 @@ MAX_STEPS: int = 16
 
 
 @eqx.filter_jit
-def simple_objective_function(
-    solution: Float[Array, "batch solution"], parameters: PyTree
-) -> Float[Array, "batch residual"]:
-    """Simple objective function for root finding
+def simple_objective(solution: Float[Array, "..."], parameters: PyTree) -> Float[Array, "..."]:
+    """A simple objective function for root finding
+
+    This function is shape-agnostic and supports both single-solution and batched inputs
+    transparently. The returned residual will broadcast to match the shape of the ``solution``
+    input.
 
     Args:
         solution: Solution
@@ -70,38 +66,38 @@ def simple_objective_function(
 
 
 @eqx.filter_jit
-def simple_solver(
-    initial_guess: Float[Array, "batch solution"], parameters: PyTree, key: PRNGKeyArray
-) -> MultiTrySolution:
-    """A simple solver for root finding
+def simple_solver(initial_guess: Float[Array, "..."], parameters: PyTree) -> optx.Solution:
+    """A simple Newton-based solver for root finding
+
+    This solver is shape-agnostic and works seamlessly with both single solution inputs and batched
+    inputs when combined with ``vmap``. The returned solution will broadcast to match the shape of
+    ``initial_guess``.
 
     Args:
         initial_guess: Initial guess of the solution
         parameters: Parameters
-        key: A random key
 
     Returns:
-        MultiTrySolution
+       Optimistic solution
     """
-    del key
-
     solver: OptxSolver = optx.Newton(rtol=RTOL, atol=ATOL)
 
     sol: optx.Solution = optx.root_find(
-        simple_objective_function,
-        solver,
-        initial_guess,
-        args=parameters,
-        throw=THROW,
-        max_steps=MAX_STEPS,
+        simple_objective, solver, initial_guess, args=parameters, throw=THROW, max_steps=MAX_STEPS
     )
 
-    # Set attempts to unity and match the batch size
-    attempts: Integer[Array, " batch"] = jnp.ones(sol.value.shape[0], dtype=int)
+    return sol
 
-    multi_sol: MultiTrySolution = MultiTrySolution(sol, attempts)
 
-    return multi_sol
+# Batch retry solver
+simple_batch_retry_solver: Callable = make_batch_retry_solver(simple_solver, simple_objective)
+
+# Vectorise to test that a vectorised solver also works with the batch_retry_solver
+simple_solver_vmapped: Callable = eqx.filter_vmap(simple_solver, in_axes=(0, None))
+simple_objective_vmapped: Callable = eqx.filter_vmap(simple_objective, in_axes=(0, None))
+simple_batch_retry_solver_vmapped: Callable = make_batch_retry_solver(
+    simple_solver_vmapped, simple_objective_vmapped
+)
 
 
 def test_single_solve() -> None:
@@ -110,11 +106,9 @@ def test_single_solve() -> None:
     parameters: PyTree = {"a": jnp.array(4.0)}  # root = 2
 
     # As per the design model, the initial guess must be batched even for a single solve
-    initial_guess: Float[Array, "batch solution"] = jnp.array([[1]])
+    initial_guess: Float[Array, "batch solution"] = jnp.array([[1.0]])
 
-    key: PRNGKeyArray = random.PRNGKey(0)
-
-    multi_sol: MultiTrySolution = simple_solver(initial_guess, parameters, key)
+    multi_sol: optx.Solution = simple_solver(initial_guess, parameters)
 
     # Confirm all array shapes and types
     # 2-D float array
@@ -123,8 +117,6 @@ def test_single_solve() -> None:
     assert_allclose(multi_sol.stats["num_steps"], 5, strict=True)
     # Integer 32
     assert_allclose(multi_sol.result._value, np.array(0, dtype=np.int32), strict=True)
-    # 1-D integer array
-    assert_allclose(multi_sol.attempts, np.array([1]), strict=True)
 
 
 def test_batch_solve() -> None:
@@ -134,9 +126,7 @@ def test_batch_solve() -> None:
 
     initial_guess = jnp.array([[1.0], [10.0], [1.0]])
 
-    key: PRNGKeyArray = random.PRNGKey(0)
-
-    multi_sol: MultiTrySolution = simple_solver(initial_guess, parameters, key)
+    multi_sol: optx.Solution = simple_solver(initial_guess, parameters)
 
     # Confirm all array shapes and types
     # 2-D float array
@@ -145,26 +135,72 @@ def test_batch_solve() -> None:
     assert_allclose(multi_sol.stats["num_steps"], 7, strict=True)
     # Integer 32
     assert_allclose(multi_sol.result._value, np.array(0, dtype=np.int32), strict=True)
+
+
+def test_batch_retry_solver_single():
+    """Tests the batch retry solver for a single case"""
+
+    parameters: PyTree = {"a": jnp.array(4.0)}  # root = 2
+
+    # As per the design model, the initial guess must be batched even for a single solve
+    initial_guess: Float[Array, "batch solution"] = jnp.array([[1.0]])
+
+    key: PRNGKeyArray = random.PRNGKey(0)
+
+    multi_sol: MultiTrySolution = simple_batch_retry_solver(initial_guess, parameters, key, 1, 10)
+
+    print("solution returned = ", multi_sol.value)
+
+    print("num_steps returned = ", multi_sol.stats["num_steps"])
+
+    print("result returned = ", multi_sol.result._value)
+
+    # Confirm all array shapes and types
+    # 2-D float array
+    # assert_allclose(multi_sol.value, np.array([[2]], dtype=float), strict=True)
+    # Integer
+    # assert_allclose(multi_sol.stats["num_steps"], 5, strict=True)
+    # Integer 32
+    # assert_allclose(multi_sol.result._value, np.array(0, dtype=np.int32), strict=True)
     # 1-D integer array
-    assert_allclose(multi_sol.attempts, np.array([1, 1, 1]), strict=True)
+    # assert_allclose(multi_sol.attempts, np.array([1]), strict=True)
 
 
-# def test_batch_retry_solver_single():
-#     """Tests the batch retry solver for a single case"""
+def test_batch_retry_solver_batch():
+    """Tests the batch retry solver for a single case"""
 
-#     params_single: PyTree = {"a": jnp.array([4.0])}  # root = 2
+    parameters: PyTree = {"a": jnp.array([[4.0], [9.0]])}  # root = 2
 
-#     initial_single: Float[Array, "batch solution"] = jnp.array([[1.0]])  # shape (batch, solution)
+    # As per the design model, the initial guess must be batched even for a single solve
+    initial_guess: Float[Array, "batch solution"] = jnp.array([[1.0], [2.0]])
 
-#     key = random.PRNGKey(0)
-#     perturb_scale = 0.5
-#     max_attempts = 5
+    key: PRNGKeyArray = random.PRNGKey(0)
 
-#     single_result = batch_retry_solver(
-#         simple_solver,
-#         initial_single,
-#         params_single,
-#         perturb_scale,
-#         max_attempts,
-#         key,
-#     )
+    multi_sol: MultiTrySolution = simple_batch_retry_solver(initial_guess, parameters, key, 1, 10)
+
+    print("solution returned = ", multi_sol.value)
+
+    print("num_steps returned = ", multi_sol.stats["num_steps"])
+
+    print("result returned = ", multi_sol.result._value)
+
+
+def test_batch_retry_solver_batch_vmap() -> None:
+    """TODO"""
+
+    parameters: PyTree = {"a": 4.0}  # root = 2
+
+    # As per the design model, the initial guess must be batched even for a single solve
+    initial_guess: Float[Array, "batch solution"] = jnp.array([[1.0], [2.0]])
+
+    key: PRNGKeyArray = random.PRNGKey(0)
+
+    multi_sol: MultiTrySolution = simple_batch_retry_solver_vmapped(
+        initial_guess, parameters, key, 1, 10
+    )
+
+    print("solution returned = ", multi_sol.value)
+
+    print("num_steps returned = ", multi_sol.stats["num_steps"])
+
+    print("result returned = ", multi_sol.result._value)
