@@ -28,7 +28,7 @@ from jaxtyping import Array, ArrayLike, Float, PRNGKeyArray, PyTree
 from numpy.testing import assert_allclose
 
 from jaxmod import debug_logger
-from jaxmod.solvers import MultiTrySolution, make_batch_retry_solver
+from jaxmod.solvers import MultiAttemptSolution, make_batch_retry_solver
 from jaxmod.type_aliases import OptxSolver
 
 logger: logging.Logger = debug_logger()
@@ -147,7 +147,9 @@ def test_batch_retry_solver_single():
 
     key: PRNGKeyArray = random.PRNGKey(0)
 
-    multi_sol: MultiTrySolution = simple_batch_retry_solver(initial_guess, parameters, key, 1, 10)
+    multi_sol: MultiAttemptSolution = simple_batch_retry_solver(
+        initial_guess, parameters, key, 1, 10
+    )
 
     print("solution returned = ", multi_sol.value)
 
@@ -176,7 +178,9 @@ def test_batch_retry_solver_batch():
 
     key: PRNGKeyArray = random.PRNGKey(0)
 
-    multi_sol: MultiTrySolution = simple_batch_retry_solver(initial_guess, parameters, key, 1, 10)
+    multi_sol: MultiAttemptSolution = simple_batch_retry_solver(
+        initial_guess, parameters, key, 1, 10
+    )
 
     print("solution returned = ", multi_sol.value)
 
@@ -195,7 +199,7 @@ def test_batch_retry_solver_batch_vmap() -> None:
 
     key: PRNGKeyArray = random.PRNGKey(0)
 
-    multi_sol: MultiTrySolution = simple_batch_retry_solver_vmapped(
+    multi_sol: MultiAttemptSolution = simple_batch_retry_solver_vmapped(
         initial_guess, parameters, key, 1, 10
     )
 

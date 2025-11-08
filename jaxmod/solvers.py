@@ -32,38 +32,58 @@ POSTCHECK_TOLERANCE: float = 1.0e-8
 attempt"""
 
 
-class MultiTrySolution(eqx.Module):  # pragma: no cover
+class MultiAttemptSolution(eqx.Module):  # pragma: no cover
     """A solution wrapper for handling multiple solver attempts per problem
+
+    This class standardises solver outputs from multi-attempt strategies. Some attributes
+    (e.g. ``converged``, ``solver_success``, ``num_steps``) are broadcast to the batch dimension
+    to ensure consistent shapes across all outputs, whether the underlying solver returns scalar
+    or per-attempt values.
 
     Args:
         solution: Optimistix solution
-        attempts: Number of attempts
+        _attempts: Number of attempts required for each batch element to converge (``0`` indicates
+            no successful attempt). Defaults to ``1``.
     """
 
     solution: optx.Solution
-    attempts: Integer[Array, "..."]
+    _attempts: ArrayLike = 1
+
+    @property
+    def attempts(self) -> Integer[Array, " batch"]:
+        return jnp.broadcast_to(self._attempts, self.batch_size)
 
     @property
     def aux(self):
         return self.solution.aux
 
     @property
-    def converged(self) -> Bool[Array, "..."]:
+    def batch_size(self) -> int:
+        """Batch size"""
+        return self.solution.value.shape[0]
+
+    @property
+    def converged(self) -> Bool[Array, " batch"]:
         """Boolean mask indicating objective-based convergence"""
-        return self.attempts > 0
+        return jnp.broadcast_to(self.attempts > 0, self.batch_size)
+
+    @property
+    def num_steps(self) -> Integer[Array, " batch"]:
+        """Number of steps"""
+        return jnp.broadcast_to(self.stats["num_steps"], self.batch_size)
 
     @property
     def result(self) -> RESULTS:
         return self.solution.result
 
     @property
-    def value(self):
+    def value(self) -> Float[Array, "batch solution"]:
         return self.solution.value
 
     @property
-    def solver_success(self) -> Bool[Array, "..."]:
+    def solver_success(self) -> Bool[Array, " batch"]:
         """Whether the underlying solver claims success"""
-        return self.solution.result == RESULTS.successful
+        return jnp.broadcast_to(self.solution.result == RESULTS.successful, self.batch_size)
 
     @property
     def state(self) -> Any:
@@ -126,7 +146,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         perturb_scale: ArrayLike,
         max_attempts: int,
         tolerance: float = POSTCHECK_TOLERANCE,
-    ) -> MultiTrySolution:
+    ) -> MultiAttemptSolution:
         """Batched solver with retry and perturbation for failed cases
 
         Runs a batched solver function on a set of initial guesses. If some entries fail to
@@ -141,7 +161,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
             ``solver_function`` may return a solver result indicating success even when the
             objective residual remains above tolerance. Convergence is therefore validated
             independently using :func:`check_convergence`, and the result of that validation is
-            tracked in :meth:`MultiTrySolution.attempts`.
+            tracked in :meth:`MultiAttemptSolution.attempts`.
                 - ``solution.result``: solver's internal convergence classification
                 - ``attempts``: first iteration satisfying objective-based check
                 - ``attempts == 0``: did not converge within ``max_attempts``
@@ -157,7 +177,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
                 each solve attempt. Defaults to :obj:`POSTCHECK_TOLERANCE`.
 
         Returns:
-            :class:`MultiTrySolution` instance
+            :class:`MultiAttemptSolution` instance
         """
 
         batch_size: int = initial_guess.shape[0]
@@ -344,7 +364,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         sol: optx.Solution = Solution(
             final_solution, final_result, None, {"num_steps": final_num_steps}, None
         )
-        multi_sol: MultiTrySolution = MultiTrySolution(sol, attempts=final_attempt)
+        multi_sol: MultiAttemptSolution = MultiAttemptSolution(sol, final_attempt)
 
         return multi_sol
 
