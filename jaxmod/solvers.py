@@ -27,7 +27,7 @@ from jax import lax, random
 from jaxtyping import Array, ArrayLike, Bool, Float, Integer, PRNGKeyArray, PyTree
 from optimistix import RESULTS, Solution
 
-POSTCHECK_TOLERANCE: float = 1.0e-8
+POSTCHECK_TOLERANCE: float = 1.0e-6
 """Default tolerance for the objective-based convergence validation performed after each solve
 attempt"""
 
@@ -94,30 +94,27 @@ class MultiAttemptSolution(eqx.Module):  # pragma: no cover
         return self.solution.stats
 
 
-def check_convergence(
-    objective_function: Callable,
-    solution: Float[Array, "batch solution"],
-    parameters: PyTree,
-    tolerance: float = POSTCHECK_TOLERANCE,
-) -> Bool[Array, " batch"]:  # pragma: no cover
-    """Checks convergence of a batched solution
+def max_norm(
+    objective_function: Callable, solution: Float[Array, "batch solution"], parameters: PyTree
+) -> Float[Array, " batch"]:  # pragma: no cover
+    """Computes the L-infinity norm of batched objective residuals.
 
-    Evaluates the objective function for each solution in a batch and determines whether each model
-    has converged within a specified tolerance. Convergence is defined by the norm of the objective
-    function value being less than ``tolerance``.
+    Evaluates the objective function for each model in the batch and returns the maximum absolute
+    residual across all components of each system. This is a vectorised variant of
+    :func:`optimistix.max_norm`, producing one scalar L-infinity norm per system in the batch.
+
+    See: https://docs.kidger.site/optimistix/api/norms/
 
     Args:
         objective_function: A callable taking ``solution`` and ``parameters`` that returns the
             objective residuals for each model in the batch
         solution: Batched array of candidate solutions
         parameters: Parameters passed to the objective function
-        tolerance: Tolerance for the objective-based convergence validation performed after
-            each solve attempt. Defaults to :obj:`POSTCHECK_TOLERANCE`.
 
     Returns:
-        An array indicating which solutions have converged within the specified tolerance
+        An array of the L-infinity norm
     """
-    return jnp.linalg.norm(objective_function(solution, parameters), axis=1) < tolerance
+    return jnp.linalg.norm(objective_function(solution, parameters), ord=jnp.inf, axis=1)
 
 
 def make_batch_retry_solver(solver_function: Callable, objective_function: Callable) -> Callable:
@@ -160,8 +157,8 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         Note:
             ``solver_function`` may return a solver result indicating success even when the
             objective residual remains above tolerance. Convergence is therefore validated
-            independently using :func:`check_convergence`, and the result of that validation is
-            tracked in :meth:`MultiAttemptSolution.attempts`.
+            independently and the result of that validation is tracked in
+            :meth:`MultiAttemptSolution.attempts`.
                 - ``solution.result``: solver's internal convergence classification
                 - ``attempts``: first iteration satisfying objective-based check
                 - ``attempts == 0``: did not converge within ``max_attempts``
@@ -231,8 +228,8 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
 
             # If the solver result is broadcast from a scalar we can't use it to decide which
             # individual models failed. Instead we must perform a per-system check.
-            new_successful: Bool[Array, " batch"] = check_convergence(
-                objective_function, new_solution, parameters, tolerance=tolerance
+            new_successful: Bool[Array, " batch"] = (
+                max_norm(objective_function, new_solution, parameters) < tolerance
             )
             # jax.debug.print("new_successful = {out}", out=new_successful)
 
@@ -317,11 +314,9 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
 
         # If the solver result is broadcast from a scalar we can't use it to decide which
         # individual models failed. Instead we must perform a per-system check.
-        first_converged: Bool[Array, " batch"] = check_convergence(
-            objective_function, first_solution, parameters, tolerance=tolerance
+        first_converged: Bool[Array, " batch"] = (
+            max_norm(objective_function, first_solution, parameters) < tolerance
         )
-        # jax.debug.print("first_converged = {out}", out=first_converged)
-
         first_num_steps: Integer[Array, " batch"] = jnp.broadcast_to(
             first_sol.stats["num_steps"], batch_size
         )
