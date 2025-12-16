@@ -1,6 +1,6 @@
 [project]
 name = "jaxmod"
-version = "0.3.0"
+version = "0.4.0"
 description = "Lightweight utility functions for JAX arrays, batching, and pytrees"
 readme = "README.md"
 requires-python = ">=3.11,<=4.0"
