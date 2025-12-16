@@ -22,6 +22,7 @@ from typing import Any, Literal, cast
 import equinox as eqx
 import jax.numpy as jnp
 import lineax as lx
+import numpy as np
 import optimistix as optx
 from equinox._enum import EnumerationItem
 from jax import lax, random
@@ -29,7 +30,7 @@ from jaxtyping import Array, ArrayLike, Bool, Float, Integer, PRNGKeyArray, PyTr
 from lineax import AbstractLinearSolver
 from optimistix import RESULTS, Solution
 
-from jaxmod.type_aliases import OptxSolver
+from jaxmod.type_aliases import NpFloat, OptxSolver
 
 POSTCHECK_TOLERANCE: float = 1.0e-6
 """Default tolerance for the objective-based convergence validation performed after each solve
@@ -140,6 +141,15 @@ class MultiAttemptSolution(eqx.Module):  # pragma: no cover
     @property
     def stats(self) -> dict[str, PyTree[ArrayLike]]:
         return self.solution.stats
+
+    def asdict(self) -> dict[Any, NpFloat]:
+        """Converts pertinent solution statistics to a dictionary"""
+        return {
+            "status": np.asarray(self.solver_success),
+            "steps": np.asarray(self.num_steps),
+            "attempts": np.asarray(self.attempts),
+            "converged": np.asarray(self.converged),
+        }
 
 
 def max_norm(
