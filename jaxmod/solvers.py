@@ -99,26 +99,26 @@ class MultiAttemptSolution(eqx.Module):  # pragma: no cover
 
     @property
     def attempts(self) -> Integer[Array, " batch"]:
-        return jnp.broadcast_to(self._attempts, self.batch_size)
+        return jnp.broadcast_to(self._attempts, self.batch_shape)
 
     @property
     def aux(self):
         return self.solution.aux
 
     @property
-    def batch_size(self) -> tuple[int, ...]:
+    def batch_shape(self) -> tuple[int, ...]:
         """Batch shape (all dimensions except the trailing solution dimension)"""
         return self.solution.value.shape[:-1]
 
     @property
     def converged(self) -> Bool[Array, " batch"]:
         """Boolean mask indicating objective-based convergence"""
-        return jnp.broadcast_to(self.attempts > 0, self.batch_size)
+        return jnp.broadcast_to(self.attempts > 0, self.batch_shape)
 
     @property
     def num_steps(self) -> Integer[Array, " batch"]:
         """Number of steps"""
-        return jnp.broadcast_to(self.stats["num_steps"], self.batch_size)
+        return jnp.broadcast_to(self.stats["num_steps"], self.batch_shape)
 
     @property
     def result(self) -> optx.RESULTS:
@@ -131,7 +131,7 @@ class MultiAttemptSolution(eqx.Module):  # pragma: no cover
     @property
     def solver_success(self) -> Bool[Array, " batch"]:
         """Whether the underlying solver claims success"""
-        return jnp.broadcast_to(self.solution.result == optx.RESULTS.successful, self.batch_size)
+        return jnp.broadcast_to(self.solution.result == optx.RESULTS.successful, self.batch_shape)
 
     @property
     def state(self) -> Any:
@@ -369,8 +369,10 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
             # tolerance on each batch entry individually. We track the first successful attempt
             # index in `attempts`. An entry is considered converged if attempts > 0, ensuring
             # consistency with the convergence mask used elsewhere in the code.
+            # i starts at 2 (second overall attempt), so to allow max_retries retries we need
+            # the body to run at i in {2, ..., max_retries+1}, hence the condition i < max_retries+2.
             continue_loop: Bool[Array, "..."] = jnp.logical_and(
-                jnp.any(attempt == 0), i < max_retries
+                jnp.any(attempt == 0), i < max_retries + 2
             )
 
             return continue_loop
@@ -380,6 +382,9 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         first_sol: optx.Solution = solver_function(initial_guess, parameters)
         first_solution: Float[Array, "... solution"] = first_sol.value
         # jax.debug.print("first_solution = {out}", out=first_solution)
+
+        # Check the solver result
+        # jax.debug.print("first_sol.result = {out}", out=first_sol.result)
 
         # Perform a per-system check
         first_converged: Bool[Array, "..."] = (
@@ -433,9 +438,13 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         )
 
         # This solution instance does not return all the information from the solves, but it
-        # encapsulates the most important (final) quantities
+        # encapsulates the most important (final) quantities. Zero out steps for failed entries so
+        # that reported steps are not misleadingly non-zero for models that never converged.
+        final_num_steps_out: Integer[Array, "..."] = cast(
+            Array, jnp.where(final_attempt > 0, final_num_steps, jnp.zeros_like(final_num_steps))
+        )
         sol: optx.Solution = optx.Solution(
-            final_solution, final_result, None, {"num_steps": final_num_steps}, None
+            final_solution, final_result, None, {"num_steps": final_num_steps_out}, None
         )
         multi_sol: MultiAttemptSolution = MultiAttemptSolution(sol, final_attempt)
 
