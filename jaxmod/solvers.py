@@ -174,7 +174,7 @@ def max_norm(
     return jnp.linalg.norm(objective_function(solution, parameters), ord=jnp.inf, axis=-1)
 
 
-def _expand_mask(
+def expand_mask(
     mask: Bool[Array, "..."], target: Float[Array, "... solution"]
 ) -> Bool[Array, "... 1"]:
     """Expands a batch mask to broadcast over trailing solution dimensions.
@@ -287,7 +287,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
             )
             # jax.debug.print("raw_perturb = {out}", out=raw_perturb)
             perturbations: Float[Array, "... solution"] = jnp.where(
-                _expand_mask(failed_mask, raw_perturb),
+                expand_mask(failed_mask, raw_perturb),
                 perturb_scale * raw_perturb,
                 jnp.zeros_like(solution),
             )
@@ -316,7 +316,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
             update_mask: Bool[Array, "..."] = jnp.logical_and(failed_mask, new_successful)
             # jax.debug.print("update_mask = {out}", out=update_mask)
             updated_solution: Float[Array, "... solution"] = cast(
-                Array, jnp.where(_expand_mask(update_mask, new_solution), new_solution, solution)
+                Array, jnp.where(expand_mask(update_mask, new_solution), new_solution, solution)
             )
             updated_result_value: Integer[Array, "..."] = jnp.where(
                 update_mask, new_result_value, result_value
@@ -403,7 +403,7 @@ def make_batch_retry_solver(solver_function: Callable, objective_function: Calla
         # jax.debug.print("first_num_steps = {out}", out=first_num_steps)
 
         # Failback solution to initial guess for failed models
-        first_converged_bc: Bool[Array, "... 1"] = _expand_mask(first_converged, first_solution)
+        first_converged_bc: Bool[Array, "... 1"] = expand_mask(first_converged, first_solution)
         # jax.debug.print("first_converged_bc = {out}", out=first_converged_bc)
 
         solution: Float[Array, "... solution"] = cast(
